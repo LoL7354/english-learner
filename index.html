@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英语学习助手 PWA</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui;}
+        body{background:#f5f7fa;padding:20px;min-height:100vh;}
+        .container{max-width:500px;margin:0 auto;}
+        h2{text-align:center;margin-bottom:20px;color:#222;}
+        .card{background:#fff;border-radius:16px;padding:24px;box-shadow:0 2px 10px #00000018;margin-bottom:16px;}
+        button{width:100%;padding:14px;font-size:18px;border:none;border-radius:12px;background:#2563eb;color:white;margin:8px 0;cursor:pointer;}
+        .btn-gray{background:#64748b;}
+        .btn-green{background:#16a34a;}
+        .btn-orange{background:#ea580c;}
+        .btn-purple{background:#7c3aed;}
+        .btn-red{background:#dc2626;}
+        .row{display:flex;gap:10px;flex-wrap:wrap;}
+        .row button{flex:1;min-width:80px;}
+        select,input[type=file]{width:100%;padding:12px;font-size:16px;margin:8px 0;border:1px solid #ccc;border-radius:10px;}
+        textarea{width:100%;min-height:150px;margin:10px 0;padding:10px;font-size:16px;border:1px solid #ccc;border-radius:10px;}
+        .english-text{font-size:34px;text-align:center;font-weight:bold;margin:40px 0;color:#111;}
+        .chinese-text{font-size:24px;text-align:center;margin:20px 0;color:#444;min-height:36px;}
+        .hidden{display:none;}
+        #fireworkCanvas{position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:999;}
+        .tip{font-size:13px;color:#888;margin:6px 0;}
+        .item-row{padding:10px;border-bottom:1px solid #eee;}
+        .item-eng{font-weight:bold;font-size:17px;}
+        .item-cn{color:#555;margin:4px 0;font-size:15px;}
+        .item-ctrl{display:flex;gap:8px;margin-top:6px;}
+        .item-ctrl button{padding:8px;font-size:14px;margin:0;}
+    </style>
+</head>
+<body>
+<canvas id="fireworkCanvas"></canvas>
+<div class="container">
+    <!-- 主页 -->
+    <div id="pageHome" class="card">
+        <h2>📖 英语学习助手</h2>
+        <button onclick="showPage('pageUpload')">📷 图片OCR识别导入</button>
+        <button onclick="showPage('pageBatchImport')">✍️ 批量文本导入</button>
+        <button onclick="showPage('pageManage')">🗂️ 词条管理（编辑/删除中文）</button>
+        <button onclick="showPage('pageSelectUnit')">▶ 开始学习</button>
+        <p class="tip">💡 发音：手机系统原生TTS，语速0.8，点击发音延迟1秒朗读</p>
+    </div>
+
+    <!-- 上传OCR页面 -->
+    <div id="pageUpload" class="card hidden">
+        <h2>图片OCR识别导入</h2>
+        <label>选择保存单元：</label>
+        <select id="selUnitUpload">
+            <option value="1">单元1</option>
+            <option value="2">单元2</option>
+            <option value="3">单元3</option>
+            <option value="4">单元4</option>
+            <option value="5">单元5</option>
+            <option value="6">单元6</option>
+        </select>
+        <label>类型：</label>
+        <select id="selTypeUpload">
+            <option value="WORD">单词短语</option>
+            <option value="SENTENCE">英语课文句子</option>
+        </select>
+        <input type="file" id="imgFile" accept="image/*">
+        <button class="btn-gray" onclick="doOCR()">开始识别图片文字</button>
+        <textarea id="ocrResult"></textarea>
+        <p class="tip">识别完成后，你可以手动编辑，再保存</p>
+        <button class="btn-green" onclick="saveOCRData()">保存到所选单元</button>
+        <button class="btn-gray" onclick="showPage('pageHome')">返回主页</button>
+    </div>
+
+    <!-- 批量文本导入页面 -->
+    <div id="pageBatchImport" class="card hidden">
+        <h2>批量文本导入</h2>
+        <label>选择保存单元：</label>
+        <select id="selUnitBatch">
+            <option value="1">单元1</option>
+            <option value="2">单元2</option>
+            <option value="3">单元3</option>
+            <option value="4">单元4</option>
+            <option value="5">单元5</option>
+            <option value="6">单元6</option>
+        </select>
+        <label>类型：</label>
+        <select id="selTypeBatch">
+            <option value="WORD">单词短语</option>
+            <option value="SENTENCE">英语课文句子</option>
+        </select>
+        <p class="tip">👉 每行一条英文，直接粘贴，一行就是一条词条</p>
+        <textarea id="batchText"></textarea>
+        <button class="btn-green" onclick="batchImport()">一键批量导入保存</button>
+        <button class="btn-gray" onclick="showPage('pageHome')">返回主页</button>
+    </div>
+
+    <!-- ✅ 词条管理页面 -->
+    <div id="pageManage" class="card hidden">
+        <h2>词条管理</h2>
+        <label>筛选单元：</label>
+        <select id="selUnitManage" onchange="renderManageList()">
+            <option value="all">全部单元</option>
+            <option value="1">单元1</option>
+            <option value="2">单元2</option>
+            <option value="3">单元3</option>
+            <option value="4">单元4</option>
+            <option value="5">单元5</option>
+            <option value="6">单元6</option>
+        </select>
+   
